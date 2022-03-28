@@ -1,0 +1,1 @@
+# A Model RRNet for Spectral Information Exploitation and LAMOST Medium-resolution Spectrum Parameter Estimation
