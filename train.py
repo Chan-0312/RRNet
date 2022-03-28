@@ -30,7 +30,7 @@ parser.add_argument(
     help='The mode of the RRN embedding',
 )
 parser.add_argument(
-    '--data_path', type=str, default='./data/refer_set_RV_20210102/',
+    '--data_path', type=str, default='./data/refer_set/',
     help='Path to the datasets',
 )
 parser.add_argument(
@@ -80,7 +80,7 @@ def train(args, dataset_info, train_label=['Teff[K]', 'Logg', 'FeH'], model_numb
 
 
     if args.net == "RRNet":
-        model_name = "NoCorr_RRNet(%s)_%s"%('-'.join([str(i) for i in args.RRNet_inplane_list]), args.rnn_mode)
+        model_name = "RRNet(%s)_%s"%('-'.join([str(i) for i in args.RRNet_inplane_list]), args.rnn_mode)
         
         net = RRNet(
             num_lable=len(train_label),
