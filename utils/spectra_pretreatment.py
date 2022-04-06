@@ -27,7 +27,10 @@ def get_flux_data(path, valid_data, RV_correct=True):
     
     c = 299792.458
 
-    rv_ku0 = valid_data['lamost_rv_ku0'].copy().values
+    if RV_correct:
+        rv_ku0 = valid_data['lamost_rv_ku0'].copy().values
+    else:
+        rv_ku0 = np.zeros(valid_data.shape[0])
     
     fits_list = valid_data['lamost_fits_name'].copy().values
     
