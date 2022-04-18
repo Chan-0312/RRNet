@@ -8,6 +8,8 @@ This repo contains the code, trained models and LAMOST-RRNet catalog for our pap
 - numpy
 - pandas
 - matplotlib
+- sklearn
+- jupyter
 
 ## Experimental data
 -  Download website: <https://github.com/Chan-0312/RRNet/releases>
