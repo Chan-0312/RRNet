@@ -31,28 +31,36 @@ parser.add_argument(
 )
 parser.add_argument(
     '--net', choices=['StarNet', 'RRNet'], default='RRNet',
-    help='The models you need to use',
+    help='The models you need to use.',
 )
 parser.add_argument(
-    '--rnn_mode', choices=['raw', 'pre-RNN', 'post-RNN'], default='post-RNN',
-    help='The mode of the RRN embedding',
+    '--mode', choices=['raw', 'pre-RNN', 'post-RNN'], default='post-RNN',
+    help='The mode of the RRN embedding.',
 )
 parser.add_argument(
-    '--data_path', type=str, default='./data/refer_set/',
-    help='Path to the datasets',
+    '--list_ResBlock_inplanes', type=list, default=[4,8,16],
+    help='The size of inplane in the RRNet residual block.'
 )
 parser.add_argument(
-    '--save_dir', type=str, default='./model_log/',
-    help='The path where the trained model data is saved.'
+    '--n_rnn_sequence', type=int, default=40,
+    help='The number of RRN sequences.'
 )
 parser.add_argument(
-    '--RRNet_inplane_list', type=list, default=[4,8,16],
-    help='The size of inplane in the RRNet residual block'
+    '--path_reference_set', type=str, default='./data/refer_set/',
+    help='The path of the reference set.',
 )
 parser.add_argument(
-    '--label_list', type=list, default=['Teff[K]', 'Logg', 'CH', 'NH', 'OH', 'MgH', 'AlH', 'SiH',
-                                        'SH', 'KH', 'CaH', 'TiH', 'CrH', 'MnH', 'FeH', 'NiH', 'CuH'],
-    help='Label data that needs to be learned'
+    '--path_log', type=str, default='./model_log/',
+    help='The path to save the model data after training.'
+)
+parser.add_argument(
+    '--batch_size', type=int, default=256,
+    help='The size of the batch.'
+)
+parser.add_argument(
+    '--label_list', type=list, default=['Teff[K]', 'Logg', 'CH', 'NH', 'OH', 'MgH', 'AlH', 'SiH', 'SH',
+                                         'KH', 'CaH', 'TiH', 'CrH', 'MnH', 'FeH', 'NiH', 'CuH'],
+    help='The label data that needs to be learned.'
 )
 parser.add_argument(
     '--noise_model', type=bool, default=True,  
@@ -73,14 +81,16 @@ def predict(args, test_flux_path, test_label_path=None):
 
         if args.net == "RRNet":            
             net = RRNet(
+                mode=args.mode,
                 num_lable=len(train_label),
-                mode=args.rnn_mode,
-                ResBlock_inplanes_list=args.RRNet_inplane_list,
+                list_ResBlock_inplanes= args.list_ResBlock_inplanes,
+                num_rnn_sequence = args.n_rnn_sequence,
+                len_spectrum=7200,
             ).to("cuda")
         elif args.net == "StarNet":
             net = StarNet(
                 num_lable=len(train_label),
-                mode=args.rnn_mode,
+                mode=args.mode,
             ).to("cuda")
         
         net.eval()
@@ -105,7 +115,7 @@ def predict(args, test_flux_path, test_label_path=None):
         return [output_label, output_label_err]
 
 
-    label_config = pickle.load(open(args.data_path + "label_config.pkl", 'rb'))
+    label_config = pickle.load(open(args.path_reference_set + "label_config.pkl", 'rb'))
     label_config_index = [label_config['label_list'].index(i) for i in args.label_list]
 
     label_mean = label_config['label_mean'][label_config_index]
@@ -138,13 +148,16 @@ def predict(args, test_flux_path, test_label_path=None):
     )
     
     if args.net == "RRNet":
-        model_name = "RRNet(%s)_%s"%('-'.join([str(i) for i in args.RRNet_inplane_list]), args.rnn_mode)
+        if args.mode != "raw":
+            model_name = "RRNet(Nr=[%s]-Ns=%d)_%s"%('-'.join([str(i) for i in args.list_ResBlock_inplanes]), args.n_rnn_sequence, args.mode)
+        else:
+            model_name = "RRNet(Nr=[%s])_%s"%('-'.join([str(i) for i in args.list_ResBlock_inplanes]), args.mode)
     elif args.net == "StarNet":
-        model_name = "StarNet_%s"%args.rnn_mode
+        model_name = "StarNet_%s"%args.mode
     if args.noise_model:
         model_name += "_add-noise"
 
-    model_path = args.save_dir+model_name
+    model_path = args.path_log+model_name
     model_list = os.listdir(model_path)
     output_list_SP = []
     output_list_CA = []
@@ -213,8 +226,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     predict(args, test_flux_path=args.test_flux_path, test_label_path="./data/refer_set/test_label.csv")
-    predict(args, test_flux_path='./data/refer_set/train_flux.pkl', test_label_path="./data/refer_set/train_label.csv")
-    predict(args, test_flux_path='./data/refer_set/valid_flux.pkl', test_label_path="./data/refer_set/valid_label.csv")
+    # predict(args, test_flux_path='./data/refer_set/train_flux.pkl', test_label_path="./data/refer_set/train_label.csv")
+    # predict(args, test_flux_path='./data/refer_set/valid_flux.pkl', test_label_path="./data/refer_set/valid_label.csv")
 
 
 

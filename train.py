@@ -22,57 +22,51 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument(
     '--net', choices=['StarNet', 'RRNet'], default='RRNet',
-    help='The models you need to use',
-
+    help='The models you need to use.',
 )
 parser.add_argument(
-    '--rnn_mode', choices=['raw', 'pre-RNN', 'post-RNN'], default='post-RNN',
-    help='The mode of the RRN embedding',
+    '--mode', choices=['raw', 'pre-RNN', 'post-RNN'], default='post-RNN',
+    help='The mode of the RRN embedding.',
 )
 parser.add_argument(
-    '--data_path', type=str, default='./data/refer_set/',
-    help='Path to the datasets',
+    '--list_ResBlock_inplanes', type=list, default=[4,8,16],
+    help='The size of inplane in the RRNet residual block.'
 )
 parser.add_argument(
-    '--save_dir', type=str, default='./model_log/',
-    help='The path where the trained model data is saved.'
+    '--n_rnn_sequence', type=int, default=40,
+    help='The number of RRN sequences.'
+)
+parser.add_argument(
+    '--path_reference_set', type=str, default='./data/refer_set/',
+    help='The path of the reference set.',
+)
+parser.add_argument(
+    '--path_log', type=str, default='./model_log/',
+    help='The path to save the model data after training.'
 )
 parser.add_argument(
     '--batch_size', type=int, default=256,
-    help='The size of the batch'
+    help='The size of the batch.'
 )
 parser.add_argument(
     '--n_epochs', type=int, default=30,
-    help='Number of (pseudo) epochs to train for'
-)
-parser.add_argument(
-    '--RRNet_inplane_list', type=list, default=[4,8,16],
-    help='The size of inplane in the RRNet residual block'
-)
-parser.add_argument(
-    '--label_list', type=list, default=['Teff[K]', 'Logg', 'CH', 'NH', 'OH', 'MgH', 'AlH', 'SiH', 'SH',
-                                         'KH', 'CaH', 'TiH', 'CrH', 'MnH', 'FeH', 'NiH', 'CuH'],
-    help='Label data that needs to be learned'
+    help='Number of epochs to train.'
 )
 parser.add_argument(
     '--add_training_noise', type=bool, default=True,  
     help='Whether to add Gaussian noise with a mean of 1 and a variance of 1 during training'
+)
+parser.add_argument(
+    '--label_list', type=list, default=['Teff[K]', 'Logg', 'CH', 'NH', 'OH', 'MgH', 'AlH', 'SiH', 'SH',
+                                         'KH', 'CaH', 'TiH', 'CrH', 'MnH', 'FeH', 'NiH', 'CuH'],
+    help='The label data that needs to be learned.'
 )
 
 
 def add_noise(input_x):
     normal_noise = torch.normal(mean=torch.zeros_like(input_x), std=torch.ones_like(input_x))
     normal_prob = torch.rand_like(input_x)  
-    input_x[normal_prob<0.25] += normal_noise[normal_prob<0.25]
-
-    # noise_row = np.random.choice(input_x.shape[0], input_x.shape[0]//2, replace=False)
-    # normal_noise = torch.normal(mean=torch.zeros_like(input_x[noise_row, :]), std=torch.ones_like(input_x[noise_row, :]))
-    # normal_prob = torch.rand_like(input_x[noise_row, :])  
-    # input_x[noise_row, :][normal_prob<0.25] += normal_noise[normal_prob<0.25]
-      
-    # noise_row = np.random.choice(input_x.shape[0], input_x.shape[0]//4, replace=False)
-    # normal_prob = torch.rand_like(input_x[noise_row, :])     
-    # input_x[noise_row, :][normal_prob<0.05] = 0
+    input_x[normal_prob<0.25] += normal_noise[normal_prob<0.25]  
 
     return input_x
 
@@ -80,21 +74,26 @@ def train(args, dataset_info, train_label=['Teff[K]', 'Logg', 'FeH'], model_numb
 
 
     if args.net == "RRNet":
-        model_name = "RRNet(%s)_%s"%('-'.join([str(i) for i in args.RRNet_inplane_list]), args.rnn_mode)
-        
+        if args.mode != "raw":
+            model_name = "RRNet(Nr=[%s]-Ns=%d)_%s"%('-'.join([str(i) for i in args.list_ResBlock_inplanes]), args.n_rnn_sequence, args.mode)
+        else:
+            model_name = "RRNet(Nr=[%s])_%s"%('-'.join([str(i) for i in args.list_ResBlock_inplanes]), args.mode)
+
         net = RRNet(
+            mode=args.mode,
             num_lable=len(train_label),
-            mode=args.rnn_mode,
-            ResBlock_inplanes_list=args.RRNet_inplane_list,
+            list_ResBlock_inplanes= args.list_ResBlock_inplanes,
+            num_rnn_sequence = args.n_rnn_sequence,
+            len_spectrum=7200,
         )
         if cuda:
             net = net.to("cuda")
     elif args.net == "StarNet":
-        model_name = "StarNet_%s"%args.rnn_mode
+        model_name = "StarNet_%s"%args.mode
 
         net = StarNet(
             num_lable=len(train_label),
-            mode=args.rnn_mode,
+            mode=args.mode,
         )
         if cuda:
             net = net.to("cuda")
@@ -113,7 +112,7 @@ def train(args, dataset_info, train_label=['Teff[K]', 'Logg', 'FeH'], model_numb
 
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
-    log_dir = args.save_dir+model_name
+    log_dir = args.path_log+model_name
     writer = SummaryWriter(log_dir=log_dir)
 
     label_index = [args.label_list.index(i) for i in train_label]
@@ -223,7 +222,7 @@ def train(args, dataset_info, train_label=['Teff[K]', 'Logg', 'FeH'], model_numb
 
 def get_dataset_info(args):
 
-    label_config = pickle.load(open(args.data_path + "label_config.pkl", 'rb'))
+    label_config = pickle.load(open(args.path_reference_set + "label_config.pkl", 'rb'))
     label_config_index = [label_config['label_list'].index(i) for i in args.label_list]
 
     label_mean = label_config['label_mean'][label_config_index]
@@ -233,14 +232,14 @@ def get_dataset_info(args):
 
     del label_config
 
-    X_train_torch = (pickle.load(open(args.data_path + "train_flux.pkl", 'rb')) - flux_mean) / flux_std
-    X_valid_torch = (pickle.load(open(args.data_path + "valid_flux.pkl", 'rb')) - flux_mean) / flux_std
+    X_train_torch = (pickle.load(open(args.path_reference_set + "train_flux.pkl", 'rb')) - flux_mean) / flux_std
+    X_valid_torch = (pickle.load(open(args.path_reference_set + "valid_flux.pkl", 'rb')) - flux_mean) / flux_std
  
     X_train_torch = torch.tensor(X_train_torch, dtype=torch.float32)
     X_valid_torch = torch.tensor(X_valid_torch, dtype=torch.float32)
 
-    y_train_torch = pd.read_csv(args.data_path + "train_label.csv")[args.label_list].values
-    y_valid_torch = pd.read_csv(args.data_path + "valid_label.csv")[args.label_list].values
+    y_train_torch = pd.read_csv(args.path_reference_set + "train_label.csv")[args.label_list].values
+    y_valid_torch = pd.read_csv(args.path_reference_set + "valid_label.csv")[args.label_list].values
 
     y_train_torch = (y_train_torch - label_mean) / label_std
     y_valid_torch = (y_valid_torch - label_mean) / label_std
