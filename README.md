@@ -13,7 +13,7 @@ This repo contains the code, trained models and LAMOST-RRNet catalog for our pap
 
 ## Experimental data
 -  Download website: <https://github.com/Chan-0312/RRNet/releases>
-- Please put `test_flux.pkl`, `valid_flux.pkl` and `train_flux.pkl` in the `data/refer_set/` directory and `DR7MRS_EENet_parametes.csv` in the `data/` directory.
+- Please put `test_flux.pkl`, `valid_flux.pkl` and `train_flux.pkl` in the `data/refer_set/` directory and `DR7MRS_RRNet_parametes.csv` in the `data/` directory.
 
 ## Usage
 
