@@ -33,3 +33,11 @@ python predict.py
 ## Citation
 
 - If you found this code useful please cite our paper: 
+```
+@article{xiong2022rrnet,
+  title={A Model RRNet for Spectral Information Exploitation and LAMOST Medium-resolution Spectrum Parameter Estimation},
+  author={Xiong, Shengchun and Li, Xiangru and Liao, Caixiu},
+  journal={arXiv preprint arXiv:2205.15490},
+  year={2022}
+}
+```
