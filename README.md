@@ -35,17 +35,17 @@ python predict.py
 - If you found this code useful please cite our paper: 
 ```
 @article{Xiong_2022,
-	title = {A Model {RRNet} for Spectral Information Exploitation and {LAMOST} Medium-resolution Spectrum Parameter Estimation},
+  title = {A Model {RRNet} for Spectral Information Exploitation and {LAMOST} Medium-resolution Spectrum Parameter Estimation},
   author = {Shengchun Xiong and Xiangru Li and Caixiu Liao},
-	journal = {The Astrophysical Journal Supplement Series},
+  journal = {The Astrophysical Journal Supplement Series},
   doi = {10.3847/1538-4365/ac76c6},
-	url = {https://doi.org/10.3847/1538-4365/ac76c6},
-	year = 2022,
-	month = {aug},
-	publisher = {American Astronomical Society},
-	volume = {261},
-	number = {2},
-	pages = {36},
+  url = {https://doi.org/10.3847/1538-4365/ac76c6},
+  year = 2022,
+  month = {aug},
+  publisher = {American Astronomical Society},
+  volume = {261},
+  number = {2},
+  pages = {36},
 }
 ```
 ```
